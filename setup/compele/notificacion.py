@@ -42,11 +42,70 @@ class NotifCompeUtil(BaseDao):
         # Attach the file to the message
         email_message.attach(file_attachment)
 
+    def get_datos_alm_matriz(self, sec_codigo):
+        sqlbase = """
+        select  alm.alm_codigo,
+                alm_numest,
+                alm_razsoc,
+                alm_descri,
+                alm_direcc,
+                alm_repleg,
+                alm_email,
+                alm_websit,
+                alm_fono1,
+                alm_fono2,
+                alm_movil,
+                alm_ruc,
+                alm_ciudad,
+                alm_sector,
+                alm_fecreg,
+                cnt_codigo,
+                alm_matriz,
+                alm_tipoamb,
+                alm_nomcomercial,
+                alm_contab from talmacen alm
+        """
+
+        where = " where alm_matriz = 1 "
+        if int(sec_codigo) > 1:
+            where = """
+            join tseccion sec on alm.alm_codigo = sec.alm_codigo 
+            where sec.sec_id = {0}
+            """.format(sec_codigo)
+
+        sql = "{0} {1}".format(sqlbase, where)
+
+        tupla_desc = (
+            'alm_codigo',
+            'alm_numest',
+            'alm_razsoc',
+            'alm_descri',
+            'alm_direcc',
+            'alm_repleg',
+            'alm_email',
+            'alm_websit',
+            'alm_fono1',
+            'alm_fono2',
+            'alm_movil',
+            'alm_ruc',
+            'alm_ciudad',
+            'alm_sector',
+            'alm_fecreg',
+            'cnt_codigo',
+            'alm_matriz',
+            'alm_tipoamb',
+            'alm_nomcomercial',
+            'alm_contab'
+        )
+
+        return self.first(sql, tupla_desc)
+
     def get_datos_for_notif(self, trn_codigo):
         sql = """
-        select per.per_nombres||' '||coalesce(per.per_apellidos,'') as referente,
+        select per.per_id, per.per_nombres||' '||coalesce(per.per_apellidos,'') as referente,
         per.per_ciruc, alm.alm_razsoc, alm.alm_nomcomercial, per.per_email, asi.trn_compro, alm.alm_tipoamb, 
-        alm.alm_ruc, alm.alm_direcc, asi.trn_fecreg, asifacte.tfe_claveacceso, asifacte.tfe_numautoriza, asifacte.tfe_fecautoriza
+        alm.alm_ruc, alm.alm_direcc, asi.trn_fecreg, asifacte.tfe_claveacceso, asifacte.tfe_numautoriza, 
+        asifacte.tfe_fecautoriza, asi.sec_codigo
         from
                 tasiento asi
                 join tasifacte asifacte on asi.trn_codigo = asifacte.trn_codigo
@@ -55,18 +114,40 @@ class NotifCompeUtil(BaseDao):
                 where asi.trn_codigo = {0}
         """.format(trn_codigo)
 
-        tupla_desc = ('referente', 'per_ciruc', 'alm_razsoc', 'alm_nomcomercial', 'per_email', 'trn_compro',
-                      'alm_tipoamb', 'alm_ruc', 'alm_direcc','trn_fecreg','tfe_claveacceso','tfe_numautoriza',
-                      'tfe_fecautoriza')
-        return self.first(sql, tupla_desc)
+        tupla_desc = ('per_id', 'referente', 'per_ciruc', 'alm_razsoc', 'alm_nomcomercial', 'per_email', 'trn_compro',
+                      'alm_tipoamb', 'alm_ruc', 'alm_direcc', 'trn_fecreg', 'tfe_claveacceso', 'tfe_numautoriza',
+                      'tfe_fecautoriza', 'sec_codigo')
+
+        response = self.first(sql, tupla_desc)
+        if response is not None:
+            sec_codigo = response['sec_codigo']
+            if sec_codigo > 1:
+                sql = """
+                select per.per_id, per.per_nombres||' '||coalesce(per.per_apellidos,'') as referente,
+                per.per_ciruc, alm.alm_razsoc, alm.alm_nomcomercial, per.per_email, asi.trn_compro, alm.alm_tipoamb, 
+                alm.alm_ruc, alm.alm_direcc, asi.trn_fecreg, asifacte.tfe_claveacceso, asifacte.tfe_numautoriza, 
+                asifacte.tfe_fecautoriza, asi.sec_codigo
+                from
+                        tasiento asi
+                        join tasifacte asifacte on asi.trn_codigo = asifacte.trn_codigo
+                        join tpersona per on asi.per_codigo = per.per_id      
+                        join tseccion sec on asi.sec_codigo = sec.sec_id
+                         join talmacen alm on alm.alm_codigo = sec.alm_codigo
+                        where asi.trn_codigo = {0}
+                """.format(trn_codigo)
+                response = self.first(sql, tupla_desc)
+
+        return response
 
     def enviar_email(self, trn_codigo, claveacceso):
         # obrener el correo para envio
 
         datosnotif = self.get_datos_for_notif(trn_codigo=trn_codigo)
+        per_id = datosnotif['per_id']
 
         ambiente_text = "PRUEBAS"
         alm_tipoamb = datosnotif['alm_tipoamb']
+        enviar_email = per_id > 0
         if alm_tipoamb == 2:
             ambiente_text = "PRODUCCIÓN"
 
@@ -150,36 +231,37 @@ class NotifCompeUtil(BaseDao):
         if int(alm_tipoamb) == int(ctes_facte.AMBIENTE_PRODUCCION):
             destinatario = per_email
 
-        if len(destinatario.strip()) > 0:
-            email_message = MIMEMultipart()
-            email_message["From"] = remitente
-            email_message["To"] = destinatario
-            email_message["Subject"] = "MAVIL - Notificación Comprobante Electrónico"
+        if enviar_email:
+            if len(destinatario.strip()) > 0:
+                email_message = MIMEMultipart()
+                email_message["From"] = remitente
+                email_message["To"] = destinatario
+                email_message["Subject"] = "MAVIL - Notificación Comprobante Electrónico"
 
-            headers = {
-                "User-Agent": "Chrome/51.0.2704.103",
-            }
-            # Define URL of an image
-            url_ride_pdf = "{0}?claveacceso={1}".format(ctes_facte.URI_RIDE_PDF, claveacceso)
-            url_ride_xml = "{0}?claveacceso={1}".format(ctes_facte.URI_RIDE_XML, claveacceso)
+                headers = {
+                    "User-Agent": "Chrome/51.0.2704.103",
+                }
+                # Define URL of an image
+                url_ride_pdf = "{0}?claveacceso={1}".format(ctes_facte.URI_RIDE_PDF, claveacceso)
+                url_ride_xml = "{0}?claveacceso={1}".format(ctes_facte.URI_RIDE_XML, claveacceso)
 
-            response = requests.get(url_ride_pdf, headers=headers)
-            email_message.attach(MIMEText(html_email, "html"))
+                response = requests.get(url_ride_pdf, headers=headers)
+                email_message.attach(MIMEText(html_email, "html"))
 
-            response_xml = requests.get(url_ride_xml, headers=headers)
+                response_xml = requests.get(url_ride_xml, headers=headers)
 
-            self.attach_bytes_to_email(email_message, '{0}.pdf'.format(datosnotif['trn_compro']), response.content)
+                self.attach_bytes_to_email(email_message, '{0}.pdf'.format(datosnotif['trn_compro']), response.content)
 
-            self.attach_bytes_to_email(email_message, '{0}.xml'.format(datosnotif['trn_compro']), response_xml.text)
+                self.attach_bytes_to_email(email_message, '{0}.xml'.format(datosnotif['trn_compro']), response_xml.text)
 
-            email_string = email_message.as_string()
-            smtp = smtplib.SMTP_SSL("smtp.gmail.com")
-            smtp.login(remitente, self.APP_GMAIL_CODE)
+                email_string = email_message.as_string()
+                smtp = smtplib.SMTP_SSL("smtp.gmail.com")
+                smtp.login(remitente, self.APP_GMAIL_CODE)
 
-            # smtp.sendmail(remitente, destinatario, email.as_string())
-            smtp.sendmail(remitente, destinatario, email_string)
-            smtp.quit()
-            print("Notificacion procesada para trn_codigo: {0}, correo enviado a {0}-->".format(trn_codigo,
-                                                                                                destinatario))
-        else:
-            print("Destinatario es null o vacio, no se envia notificacion para trn_codigo:{0}".format(trn_codigo))
+                # smtp.sendmail(remitente, destinatario, email.as_string())
+                smtp.sendmail(remitente, destinatario, email_string)
+                smtp.quit()
+                print("Notificacion procesada para trn_codigo: {0}, correo enviado a {0}-->".format(trn_codigo,
+                                                                                                    destinatario))
+            else:
+                print("Destinatario es null o vacio, no se envia notificacion para trn_codigo:{0}".format(trn_codigo))

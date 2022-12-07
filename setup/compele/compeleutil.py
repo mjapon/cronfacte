@@ -38,6 +38,15 @@ class CompeleUtil(BaseDao):
         if proxy_response is not None:
             gen_data.save_proxy_send_response(trn_codigo=trn_codigo, ambiente=tfe_ambiente,
                                               proxy_response=proxy_response)
-            if proxy_response['claveAcceso'] is not None:
-                notif = NotifCompeUtil(self.dbsession)
-                notif.enviar_email(trn_codigo=trn_codigo, claveacceso=clave_acceso)
+            estado_autoriza = 0
+            try:
+                estado_autoriza = int(proxy_response['estado'])
+            except Exception as ex:
+                log.error("Error al tratar de obtener respuesta de autorizacion proxy_response['estado']", ex)
+
+            if proxy_response['claveAcceso'] is not None and estado_autoriza == 1:
+                try:
+                    notif = NotifCompeUtil(self.dbsession)
+                    notif.enviar_email(trn_codigo=trn_codigo, claveacceso=clave_acceso)
+                except Exception as ex:
+                    log.error("Error al tratar de enviar notificacion ", ex)

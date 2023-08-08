@@ -21,6 +21,7 @@ class TComprobanteDao(BaseDao):
         return cuenta > 0
 
     def crear(self, form):
+        """
         if not self.existe_clave_acceso(claveacceso=form['cmp_claveaccesso']):
             tcomprobante = TComprobante()
             tcomprobante.cmp_tipo = form['cmp_tipo']
@@ -33,3 +34,4 @@ class TComprobanteDao(BaseDao):
             tcomprobante.cmp_total = form['cmp_total']
 
             self.dbsession.add(tcomprobante)
+        """

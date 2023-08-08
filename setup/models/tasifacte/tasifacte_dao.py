@@ -18,9 +18,13 @@ class TasiFacteDao(BaseDao):
         tasifacte = self.dbsession.query(TAsiFacte).filter(TAsiFacte.tfe_claveacceso == tfe_claveacceso).first()
         return tasifacte
 
+    def find_by_trn_codigo(self, trn_codigo):
+        tasifacte = self.dbsession.query(TAsiFacte).filter(TAsiFacte.trn_codigo == trn_codigo).first()
+        return tasifacte
+
     def create_or_update(self, trn_codigo, data):
         tfe_claveacceso = data['tfe_claveacceso']
-        tasifacte = self.find_by_claveacceso(tfe_claveacceso)
+        tasifacte = self.find_by_trn_codigo(trn_codigo)
 
         tfe_estado = data['tfe_estado']
         tfe_fecautoriza = data['tfe_fecautoriza']
@@ -36,6 +40,7 @@ class TasiFacteDao(BaseDao):
                 tasifacte.tfe_mensajes = tfe_mensajes
                 tasifacte.tfe_numautoriza = tfe_numautoriza
                 tasifacte.tfe_estadosri = tfe_estadosri
+                tasifacte.tfe_claveacceso = tfe_claveacceso
 
                 self.dbsession.add(tasifacte)
         else:
@@ -50,6 +55,8 @@ class TasiFacteDao(BaseDao):
             tasifacte.tfe_estadosri = tfe_estadosri
 
             self.dbsession.add(tasifacte)
+
+        self.commit()
 
     def get_tipos_estados(self):
         sql = """

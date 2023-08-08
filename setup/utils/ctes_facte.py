@@ -7,6 +7,8 @@ import logging
 
 log = logging.getLogger(__name__)
 
+ESQUEMA_FACTE_COMPROBANTES = 'comprobantes'
+
 APP_FMT_FECHA_SRI = "%d%m%Y"
 AMBIENTE_PRUEBAS = "1"
 AMBIENTE_PRODUCCION = "2"
@@ -40,5 +42,4 @@ PAGO_TARJETA_PREPAGO = "18"
 PAGO_OTROS_SIN_UTILIZACION = "20"
 PAGO_ENDOSO_TITULOS = "21"
 
-URI_RIDE_PDF = "http://localhost:8080/imprentas/RideServlet"
-URI_RIDE_XML = "http://localhost:8080/imprentas/XmlCompeServlet"
+MONTO_MAXIMO_CONS_FINAL = 50.0

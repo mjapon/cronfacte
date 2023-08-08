@@ -8,41 +8,14 @@ import logging
 from setup.models.conf import BaseDao
 from setup.models.tasiento.tasiento_dao import TAsientoDao
 from setup.models.tasifacte.tasifacte_dao import TasiFacteDao
-from setup.utils import fechas, ctes_facte, ctes
+from setup.models.tcomprobante.tcomprobante_dao import TComprobanteDao
+from setup.models.tcontribuyente.tcontribuyente_dao import TContribuyenteDao
+from setup.utils import ctes_facte
 
 log = logging.getLogger(__name__)
 
 
 class GenDataForFacte(BaseDao):
-
-    def get_data_for_save_conbrib(self, trn_codigo):
-        datos_fact = self.get_factura_data(trn_codigo=trn_codigo)
-        clave_acceso = self.get_clave_acceso(datos_factura=datos_fact['cabecera'])
-
-
-    def get_clave_acceso(self, datos_factura, tipo_ambiente):
-        trn_fecreg = datos_factura['trn_fecreg']
-
-        fechafact = fechas.format_cadena(trn_fecreg, ctes.APP_FMT_FECHA, ctes_facte.APP_FMT_FECHA_SRI)
-        tipo_comprobante = '01'
-        num_ruc = datos_factura['alm_ruc']
-
-        # serie = '{0}{1}'.format(datos_factura['alm_numest'], datos_factura['tdv_numero'])
-
-        trn_compro = datos_factura['trn_compro']
-        serie_secuencial = trn_compro
-
-        codigo_numerico = "00000000"  # potestad del contribuyente
-
-        tipo_emision = "1"
-
-        pre_clave_acceso = "{0}{1}{2}{3}{4}{5}{6}".format(fechafact, tipo_comprobante, num_ruc, tipo_ambiente,
-                                                          serie_secuencial, codigo_numerico, tipo_emision)
-
-        digito = self.get_digito_verificador(pre_clave_acceso)
-
-        clave_acceso = '{0}{1}'.format(pre_clave_acceso, digito)
-        return clave_acceso
 
     def get_factura_data(self, trn_codigo):
         sql = """
@@ -59,7 +32,15 @@ class GenDataForFacte(BaseDao):
                 per.per_ciruc,
                 0 as propina,
                 per.per_nombres||' '||coalesce(per.per_apellidos,'') per_nomapel,
-                per.per_direccion from tasiento asi
+                per.per_direccion,
+                per.per_nombres,
+                per.per_apellidos,
+                per.per_telf,
+                per.per_movil,
+                per.per_email,
+                asi.trn_compro,
+                asi.sec_codigo 
+                from tasiento asi
                 join ttpdv on asi.tdv_codigo =   ttpdv.tdv_codigo
                 join talmacen talm on ttpdv.alm_codigo = talm.alm_codigo
                 join tpersona per on asi.per_codigo = per.per_id
@@ -78,7 +59,15 @@ class GenDataForFacte(BaseDao):
                       'per_ciruc',
                       'propina',
                       'per_nomapel',
-                      'per_direccion')
+                      'per_direccion',
+                      'per_nombres',
+                      'per_apellidos',
+                      'per_telf',
+                      'per_movil',
+                      'per_email',
+                      'trn_compro',
+                      'sec_codigo'
+                      )
 
         datos_factura = self.first(sql, tupla_desc)
 
@@ -88,7 +77,7 @@ class GenDataForFacte(BaseDao):
         totales = tasidao.calcular_totales(detalles)
 
         totales_facte = {
-            'total_sin_impuesto': totales['subtotal'],
+            'total_sin_impuesto': totales['subtotal'] - totales['descuentos'],
             'total_descuentos': totales['descuentos'],
             'base_imp_iva_12': totales['subtotal12'],
             'impuesto_iva_12': totales['iva'],
@@ -102,22 +91,106 @@ class GenDataForFacte(BaseDao):
                 'pagos': pagos,
                 'totales': totales_facte}
 
+    def get_datos_alm_matriz(self, sec_codigo):
+        sqlbase = """
+        select  alm.alm_codigo,
+                alm_numest,
+                alm_razsoc,
+                alm_descri,
+                alm_direcc,
+                alm_repleg,
+                alm_email,
+                alm_websit,
+                alm_fono1,
+                alm_fono2,
+                alm_movil,
+                alm_ruc,
+                alm_ciudad,
+                alm_sector,
+                alm_fecreg,
+                cnt_codigo,
+                alm_matriz,
+                alm_tipoamb,
+                alm_nomcomercial,
+                alm_contab from talmacen alm
+        """
+
+        where = " where alm_matriz = 1 "
+        if int(sec_codigo) > 1:
+            where = """
+            join tseccion sec on alm.alm_codigo = sec.alm_codigo 
+            where sec.sec_id = {0}
+            """.format(sec_codigo)
+
+        sql = "{0} {1}".format(sqlbase, where)
+
+        tupla_desc = (
+            'alm_codigo',
+            'alm_numest',
+            'alm_razsoc',
+            'alm_descri',
+            'alm_direcc',
+            'alm_repleg',
+            'alm_email',
+            'alm_websit',
+            'alm_fono1',
+            'alm_fono2',
+            'alm_movil',
+            'alm_ruc',
+            'alm_ciudad',
+            'alm_sector',
+            'alm_fecreg',
+            'cnt_codigo',
+            'alm_matriz',
+            'alm_tipoamb',
+            'alm_nomcomercial',
+            'alm_contab'
+        )
+
+        return self.first(sql, tupla_desc)
+
     def save_proxy_send_response(self, trn_codigo, ambiente, proxy_response):
         tasifacte_dao = TasiFacteDao(self.dbsession)
-        if proxy_response['claveAcceso'] is not None:
-            data = {
-                'tfe_estado': proxy_response['estado'],
-                'tfe_estadosri': proxy_response['estadoSRI'],
-                'tfe_fecautoriza': proxy_response['fechaAutorizacion'] if 'fechaAutorizacion' in proxy_response else '',
-                'tfe_mensajes': str(proxy_response['mensajes']) if 'mensajes' in proxy_response else '',
-                'tfe_numautoriza': proxy_response[
-                    'numeroAutorizacion'] if 'numeroAutorizacion' in proxy_response else '',
-                'tfe_ambiente': ambiente,
-                'tfe_claveacceso': proxy_response['claveAcceso']
-            }
+        data = {
+            'tfe_estado': proxy_response['estado'],
+            'tfe_estadosri': proxy_response['estadoSRI'],
+            'tfe_fecautoriza': proxy_response['fechaAutorizacion'],
+            'tfe_mensajes': str(proxy_response['mensajes']) if 'mensajes' in proxy_response else '',
+            'tfe_numautoriza': proxy_response['numeroAutorizacion'],
+            'tfe_ambiente': ambiente,
+            'tfe_claveacceso': proxy_response['claveAcceso']
+        }
 
-            tasifacte_dao.create_or_update(trn_codigo=trn_codigo, data=data)
-            tasifacte_dao.commit()
-        else:
-            print("Servicio proxy retorna dato nulo, posible problema con caida de servicio de rentas")
-            log.info("Servicio proxy retorna dato nulo, posible problema con caida de servicio de rentas")
+        tasifacte_dao.create_or_update(trn_codigo=trn_codigo, data=data)
+
+    def save_contrib_and_compro(self, datosfact, claveacceso, trn_cod, emp_codigo, total_fact, estado_envio,
+                                ambiente):
+        self.set_esquema(ctes_facte.ESQUEMA_FACTE_COMPROBANTES)
+        tcontribdao = TContribuyenteDao(self.dbsession)
+        tcomprobdao = TComprobanteDao(self.dbsession)
+
+        form_contrib = {
+            'cnt_ciruc': datosfact['per_ciruc'],
+            'cnt_nombres': datosfact['per_nombres'],
+            'cnt_apellidos': datosfact['per_apellidos'],
+            'cnt_direccion': datosfact['per_direccion'],
+            'cnt_telf': datosfact['per_telf'],
+            'cnt_email': datosfact['per_email'],
+            'cnt_movil': datosfact['per_movil']
+        }
+        cnt_id = tcontribdao.create_or_update(form=form_contrib)
+
+        form_comprob = {
+            'cmp_claveaccesso': claveacceso,
+            'cmp_tipo': ctes_facte.COD_DOC_FACTURA,
+            'cmp_numero': datosfact['trn_compro'],
+            'cmp_trncod': trn_cod,
+            'cnt_id': cnt_id,
+            'emp_codigo': emp_codigo,
+            'cmp_fecha': datosfact['trn_fecreg'],
+            'cmp_total': total_fact,
+            'cmp_estado': estado_envio,
+            'cmp_ambiente': ambiente
+        }
+
+        tcomprobdao.crear(form=form_comprob)

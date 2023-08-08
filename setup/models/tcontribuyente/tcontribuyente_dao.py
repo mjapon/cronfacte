@@ -5,9 +5,9 @@ Fecha de creacion 11/9/20
 """
 import logging
 
-from fusayrepo.logica.compele.tcontribuyente.tcontribuyente_model import TContribuyente
-from fusayrepo.logica.dao.base import BaseDao
-from fusayrepo.utils import cadenas
+from setup.models.conf import BaseDao
+from setup.models.tcontribuyente.tcontribuyente_model import TContribuyente
+from setup.utils import cadenas
 
 log = logging.getLogger(__name__)
 

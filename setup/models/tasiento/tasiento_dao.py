@@ -136,7 +136,8 @@ class TAsientoDao(BaseDao):
             'descuentos': numeros.roundm2(gdescuentos),
             'total': numeros.roundm2(gtotal),
             'descglobalin': numeros.roundm2(descglobal),
-            'descglobal': numeros.roundm2(descglobal)
+            'descglobal': numeros.roundm2(descglobal),
+            'descglobaltipo': '1'
         }
 
 

@@ -141,7 +141,6 @@ class NotifCompeUtil(BaseDao):
 
     def enviar_email(self, trn_codigo, claveacceso):
         # obrener el correo para envio
-
         datosnotif = self.get_datos_for_notif(trn_codigo=trn_codigo)
         per_id = datosnotif['per_id']
 
@@ -233,35 +232,41 @@ class NotifCompeUtil(BaseDao):
 
         if enviar_email:
             if len(destinatario.strip()) > 0:
-                email_message = MIMEMultipart()
-                email_message["From"] = remitente
-                email_message["To"] = destinatario
-                email_message["Subject"] = "MAVIL - Notificación Comprobante Electrónico"
+                try:
+                    email_message = MIMEMultipart()
+                    email_message["From"] = remitente
+                    email_message["To"] = destinatario
+                    email_message["Subject"] = "MAVIL - Notificación Comprobante Electrónico"
 
-                headers = {
-                    "User-Agent": "Chrome/51.0.2704.103",
-                }
-                # Define URL of an image
-                url_ride_pdf = "{0}?claveacceso={1}".format(ctes_facte.URI_RIDE_PDF, claveacceso)
-                url_ride_xml = "{0}?claveacceso={1}".format(ctes_facte.URI_RIDE_XML, claveacceso)
+                    headers = {
+                        "User-Agent": "Chrome/51.0.2704.103",
+                    }
 
-                response = requests.get(url_ride_pdf, headers=headers)
-                email_message.attach(MIMEText(html_email, "html"))
+                    url_ride_pdf = "{0}?claveacceso={1}".format(ctes_facte.URI_RIDE_PDF, claveacceso)
+                    url_ride_xml = "{0}?claveacceso={1}".format(ctes_facte.URI_RIDE_XML, claveacceso)
 
-                response_xml = requests.get(url_ride_xml, headers=headers)
+                    log.info("entro get adjuntos")
+                    response = requests.get(url_ride_pdf, headers=headers)
+                    email_message.attach(MIMEText(html_email, "html"))
 
-                self.attach_bytes_to_email(email_message, '{0}.pdf'.format(datosnotif['trn_compro']), response.content)
+                    response_xml = requests.get(url_ride_xml, headers=headers)
 
-                self.attach_bytes_to_email(email_message, '{0}.xml'.format(datosnotif['trn_compro']), response_xml.text)
+                    self.attach_bytes_to_email(email_message, '{0}.pdf'.format(datosnotif['trn_compro']),
+                                               response.content)
+                    self.attach_bytes_to_email(email_message, '{0}.xml'.format(datosnotif['trn_compro']),
+                                               response_xml.text)
 
-                email_string = email_message.as_string()
-                smtp = smtplib.SMTP_SSL("smtp.gmail.com")
-                smtp.login(remitente, self.APP_GMAIL_CODE)
+                    email_string = email_message.as_string()
+                    smtp = smtplib.SMTP_SSL("smtp.gmail.com")
+                    smtp.login(remitente, self.APP_GMAIL_CODE)
 
-                # smtp.sendmail(remitente, destinatario, email.as_string())
-                smtp.sendmail(remitente, destinatario, email_string)
-                smtp.quit()
-                print("Notificacion procesada para trn_codigo: {0}, correo enviado a {0}-->".format(trn_codigo,
-                                                                                                    destinatario))
+                    # smtp.sendmail(remitente, destinatario, email.as_string())
+                    smtp.sendmail(remitente, destinatario, email_string)
+                    smtp.quit()
+                    log.info("Notificacion procesada para trn_codigo: {0}, correo enviado a {1}-->".format(trn_codigo,
+                                                                                                           destinatario))
+                except Exception as ex:
+                    log.info("Error envio correo", ex)
             else:
-                print("Destinatario es null o vacio, no se envia notificacion para trn_codigo:{0}".format(trn_codigo))
+                log.info(
+                    "Destinatario es null o vacio, no se envia notificacion para trn_codigo:{0}".format(trn_codigo))

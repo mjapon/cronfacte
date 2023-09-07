@@ -17,10 +17,10 @@ simplejsonutil = SimpleJsonUtil()
 
 
 PASS_REDIS_PROD = "Hart$$471"
-#myredis = redis.StrictRedis('localhost', 6379, charset="utf-8", decode_responses=True, password=PASS_REDIS_PROD)
+myredis = redis.StrictRedis('localhost', 6379, charset="utf-8", decode_responses=True, password=PASS_REDIS_PROD)
 
 
-myredis = redis.StrictRedis('localhost', 6379, charset="utf-8", decode_responses=True)
+#myredis = redis.StrictRedis('localhost', 6379, charset="utf-8", decode_responses=True)
 
 
 class RedisSubscriber(BaseDao):
@@ -48,7 +48,7 @@ class RedisSubscriber(BaseDao):
             compeleutil = CompeleUtil(self.dbsession)
             compeleutil.set_esquema(emp_esquema)
             compeleutil.autorizar(trn_codigo)
-            log.info("Termina procesamiento de mensaje autorizar: trn_codigo={0}".format(trn_codigo))
+            log.info("Termina procesamiento de mensaje autorizar mjmj: trn_codigo={0}".format(trn_codigo))
         except Exception as ex:
             log.error("Error al tratar de realizar consulta de autorizacion", ex)
 

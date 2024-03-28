@@ -242,8 +242,8 @@ class NotifCompeUtil(BaseDao):
                         "User-Agent": "Chrome/51.0.2704.103",
                     }
 
-                    url_ride_pdf = "{0}?claveacceso={1}".format(ctes_facte.URI_RIDE_PDF, claveacceso)
-                    url_ride_xml = "{0}?claveacceso={1}".format(ctes_facte.URI_RIDE_XML, claveacceso)
+                    url_ride_pdf = "{0}/{1}?fmt=pdf".format(ctes_facte.URI_RIDE_PDF, claveacceso)
+                    url_ride_xml = "{0}/{1}?fmt=xml".format(ctes_facte.URI_RIDE_XML, claveacceso)
 
                     log.info("entro get adjuntos")
                     response = requests.get(url_ride_pdf, headers=headers)

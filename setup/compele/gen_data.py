@@ -4,6 +4,7 @@ Fecha de creacion 11/9/20
 @autor: Manuel Japon
 """
 import logging
+from logging.handlers import RotatingFileHandler
 
 from setup.models.conf import BaseDao
 from setup.models.tasiento.tasiento_dao import TAsientoDao
@@ -11,6 +12,13 @@ from setup.models.tasifacte.tasifacte_dao import TasiFacteDao
 from setup.models.tcomprobante.tcomprobante_dao import TComprobanteDao
 from setup.models.tcontribuyente.tcontribuyente_dao import TContribuyenteDao
 from setup.utils import ctes_facte
+
+rutalogs = "/var/log/cronface.log"
+
+logging.basicConfig(handlers=[RotatingFileHandler(filename=rutalogs,
+                                                  mode='w', maxBytes=512000, backupCount=4)], level=logging.INFO,
+                    format='%(levelname)s %(asctime)s %(message)s',
+                    datefmt='%m/%d/%Y%I:%M:%S %p')
 
 log = logging.getLogger(__name__)
 
@@ -149,19 +157,39 @@ class GenDataForFacte(BaseDao):
 
         return self.first(sql, tupla_desc)
 
-    def save_proxy_send_response(self, trn_codigo, ambiente, proxy_response):
-        tasifacte_dao = TasiFacteDao(self.dbsession)
-        data = {
-            'tfe_estado': proxy_response['estado'],
-            'tfe_estadosri': proxy_response['estadoSRI'],
-            'tfe_fecautoriza': proxy_response['fechaAutorizacion'],
-            'tfe_mensajes': str(proxy_response['mensajes']) if 'mensajes' in proxy_response else '',
-            'tfe_numautoriza': proxy_response['numeroAutorizacion'],
-            'tfe_ambiente': ambiente,
-            'tfe_claveacceso': proxy_response['claveAcceso']
-        }
+    def get_proxy_key_value(self, key, proxy_response):
+        return proxy_response[key] if key in proxy_response else ''
 
-        tasifacte_dao.create_or_update(trn_codigo=trn_codigo, data=data)
+    def save_proxy_send_response(self, trn_codigo, ambiente, proxy_response):
+        try:
+            log.info('save_proxy_send_response')
+            tasifacte_dao = TasiFacteDao(self.dbsession)
+            data = {
+                'tfe_estado': self.get_proxy_key_value('estado', proxy_response),
+                'tfe_estadosri': self.get_proxy_key_value('estadoSRI', proxy_response),
+                'tfe_fecautoriza': self.get_proxy_key_value('fechaAutorizacion', proxy_response),
+                'tfe_mensajes': str(self.get_proxy_key_value('mensajes', proxy_response)),
+                'tfe_numautoriza': self.get_proxy_key_value('numeroAutorizacion', proxy_response),
+                'tfe_ambiente': ambiente,
+                'tfe_claveacceso': self.get_proxy_key_value('claveAcceso', proxy_response)
+            }
+
+            log.info('save_proxy_send_response 2')
+            mensajes = proxy_response['mensajes'] if 'mensajes' in proxy_response else []
+            if mensajes is not None:
+                for mensaje in mensajes:
+                    msg = str(mensaje)
+                    if "CLAVE ACCESO REGISTRADA" in msg and "identificador = \"43\"" in msg:
+                        data['tfe_estado'] = 1
+                        proxy_response['estado'] = 1
+                        data['tfe_estadosri'] = 'AUTORIZADO'
+                        data['tfe_mensajes'] = 'MAVIL:Actualizado a autorizado por error de CLAVE-ACCESO-REGISTRADA'
+
+            log.info('save_proxy_send_response 3')
+            tasifacte_dao.create_or_update(trn_codigo=trn_codigo, data=data)
+            log.info('save_proxy_send_response 4')
+        except Exception as ex:
+            log.info('Error en save_proxy_send_response ' + str(ex))
 
     def save_contrib_and_compro(self, datosfact, claveacceso, trn_cod, emp_codigo, total_fact, estado_envio,
                                 ambiente):

@@ -162,7 +162,7 @@ class GeneraFacturaCompEle(BaseDao):
         codigo_impuesto_item.text = ctes_facte.CODIGO_IMPUESTO_IVA
 
         codigo_porcentaje = et.SubElement(total_impuesto, "codigoPorcentaje")
-        codigo_porcentaje.text = ctes_facte.CODIGO_IVA_12
+        codigo_porcentaje.text = ctes_facte.CODIGO_IVA_15
 
         base_imponible = et.SubElement(total_impuesto, "baseImponible")
         base_imponible.text = str(numeros.roundm2(totales['base_imp_iva_12']))
@@ -220,7 +220,7 @@ class GeneraFacturaCompEle(BaseDao):
             precio_unitario_item = et.SubElement(detalle_item, "precioUnitario")
             precio_unitario_item.text = str(numeros.roundm2(detalle_db['dt_precio']))
 
-            descuento_fila_val = (detalle_db['dt_decto']*detalle_db['dt_cant'])+detalle_db['dt_dectogen']
+            descuento_fila_val = (detalle_db['dt_decto'] * detalle_db['dt_cant']) + detalle_db['dt_dectogen']
             descuento_fila_round = numeros.roundm2(descuento_fila_val)
 
             descuento_item = et.SubElement(detalle_item, "descuento")
@@ -253,7 +253,14 @@ class GeneraFacturaCompEle(BaseDao):
             if dai_impg > 0:
                 ivaval = numeros.get_valor_iva(subtforiva, dai_impg)
                 codigo_porcentaje_impuesto_item = et.SubElement(impuesto_item, "codigoPorcentaje")
-                codigo_porcentaje_impuesto_item.text = ctes_facte.CODIGO_IVA_12
+                codigo_porcentaje_impuesto_item.text = ctes_facte.CODIGO_IVA_15
+                # int_dai_impg = int(dai_impg * 100.0)
+                # print('mj:{0}'.format(int_dai_impg))
+                # if int_dai_impg == 15:
+                #    codigo_porcentaje_impuesto_item.text = ctes_facte.CODIGO_IVA_15
+                # elif int_dai_impg == 5:
+                #    codigo_porcentaje_impuesto_item.text = ctes_facte.CODIGO_IVA_5
+
                 tarifa_impuesto_item = et.SubElement(impuesto_item, "tarifa")
                 tarifa_impuesto_item.text = str(dai_impg_mult)
                 base_imponible_impuesto_item = et.SubElement(impuesto_item, "baseImponible")

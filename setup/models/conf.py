@@ -47,4 +47,5 @@ class BaseDao(SimpleJsonUtil):
         self.dbsession.flush()
 
     def commit(self):
-        transaction.commit()
+        self.dbsession.commit()
+        # transaction.commit()

@@ -212,7 +212,7 @@ class NotifCompeUtil(BaseDao):
 		</div>
 	</body>
 </html>        
-        """.format(compro=datosnotif['trn_compro'],
+            """.format(compro=datosnotif['trn_compro'],
                    referente=datosnotif['referente'],
                    comercio=datosnotif['alm_nomcomercial'],
                    ruc=datosnotif['alm_ruc'],

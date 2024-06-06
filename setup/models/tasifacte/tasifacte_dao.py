@@ -23,7 +23,10 @@ class TasiFacteDao(BaseDao):
         return tasifacte
 
     def create_or_update(self, trn_codigo, data):
-        tfe_claveacceso = data['tfe_claveacceso']
+        tfe_claveacceso = None
+        if cadenas.es_nonulo_novacio(data['tfe_claveacceso']):
+            tfe_claveacceso = data['tfe_claveacceso']
+
         tasifacte = self.find_by_trn_codigo(trn_codigo)
 
         tfe_estado = data['tfe_estado']
@@ -40,13 +43,14 @@ class TasiFacteDao(BaseDao):
                 tasifacte.tfe_mensajes = tfe_mensajes
                 tasifacte.tfe_numautoriza = tfe_numautoriza
                 tasifacte.tfe_estadosri = tfe_estadosri
-                tasifacte.tfe_claveacceso = tfe_claveacceso
+                tasifacte.tfe_claveacceso = tfe_claveacceso if tfe_claveacceso is not None else '_'
 
                 self.dbsession.add(tasifacte)
         else:
             tasifacte = TAsiFacte()
             tasifacte.trn_codigo = trn_codigo
-            tasifacte.tfe_claveacceso = tfe_claveacceso
+            if tfe_claveacceso is not None:
+                tasifacte.tfe_claveacceso = tfe_claveacceso
             tasifacte.tfe_numautoriza = tfe_numautoriza
             tasifacte.tfe_estado = tfe_estado
             tasifacte.tfe_fecautoriza = tfe_fecautoriza

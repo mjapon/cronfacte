@@ -162,7 +162,6 @@ class GenDataForFacte(BaseDao):
 
     def save_proxy_send_response(self, trn_codigo, ambiente, proxy_response):
         try:
-            log.info('save_proxy_send_response')
             tasifacte_dao = TasiFacteDao(self.dbsession)
             data = {
                 'tfe_estado': self.get_proxy_key_value('estado', proxy_response),
@@ -174,7 +173,6 @@ class GenDataForFacte(BaseDao):
                 'tfe_claveacceso': self.get_proxy_key_value('claveAcceso', proxy_response)
             }
 
-            log.info('save_proxy_send_response 2')
             mensajes = proxy_response['mensajes'] if 'mensajes' in proxy_response else []
             if mensajes is not None:
                 for mensaje in mensajes:
@@ -185,9 +183,8 @@ class GenDataForFacte(BaseDao):
                         data['tfe_estadosri'] = 'AUTORIZADO'
                         data['tfe_mensajes'] = 'MAVIL:Actualizado a autorizado por error de CLAVE-ACCESO-REGISTRADA'
 
-            log.info('save_proxy_send_response 3')
             tasifacte_dao.create_or_update(trn_codigo=trn_codigo, data=data)
-            log.info('save_proxy_send_response 4')
+            log.info('tasifacte actualizado')
         except Exception as ex:
             log.info('Error en save_proxy_send_response ' + str(ex))
 

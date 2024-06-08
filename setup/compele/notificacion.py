@@ -8,11 +8,19 @@ import smtplib
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from logging.handlers import RotatingFileHandler
 
 import requests
 
 from setup.models.conf import BaseDao
 from setup.utils import ctes_facte
+
+rutalogs = "/var/log/cronface.log"
+
+logging.basicConfig(handlers=[RotatingFileHandler(filename=rutalogs,
+                                                  mode='w', maxBytes=512000, backupCount=4)], level=logging.INFO,
+                    format='%(levelname)s %(asctime)s %(message)s',
+                    datefmt='%m/%d/%Y%I:%M:%S %p')
 
 log = logging.getLogger(__name__)
 
@@ -150,69 +158,72 @@ class NotifCompeUtil(BaseDao):
         if alm_tipoamb == 2:
             ambiente_text = "PRODUCCIÓN"
 
-        html_email = """
-        <!doctype html>
-<html lang="es">
-<html>
-	<head>
-		<meta charset="utf-8">
-    	<title>MAVIL-Notificación Comprobante Electrónico</title>
-    	<style>
-    		
-    	</style>
-	</head>
-	<body>
-		<div>
-			<h1>MAVIL - Notificación comprobante Electrónico - {compro}</h1>
-			<img src="https://mavil.site/assets/imgs/Mavil.png">
-			<p>
-			Estimado/a {referente}, el comercio: {comercio} le ha emitido un comprobante electrónico, el mismo que se encuentra adjunto</p>
-			<br/>
-			<br/>
-			<p>
-			
-			<table>
-			<tr>
-			<td>
-			Tipo de comprobante:</td><td>	FACTURA</td></tr>
-<tr>
-			<td>Número de comprobante:</td><td>	{compro}</td></tr>
-<tr>
-			<td>Fecha de emisión:</td><td>	{fecha}</td></tr>
-<tr>
-			<td>Tipo de emisión:</td><td>	NORMAL</td></tr>
-<tr>
-			<td>Clave de acceso:</td><td>	{clave}</td></tr>
-<tr>
-			<td>Número de autorización del comprobante:</td><td>	{clave}</td></tr>
-<tr>
-			<td>Fecha de autorización del comprobante:</td><td>	{fechaaut}</td></tr>
-<tr>
-			<td>Ambiente de emisión:</td><td>{ambiente}</td></tr>
-<tr>
-			<td>Emisor:</td><td>	{comercio}</td></tr>
-<tr>
-			<td>RUC del emisor:</td><td>	{ruc}</td></tr>
-<tr>
-			<td>Dirección del emisor:</td><td>	{direccion}</td></tr></table>
+        style = """.img{
+            width: 20%;
+            height:80%;
+        }
 
-			</p>
-			<br/>
-			<br/>
-			<p>
-			Si desea consultar todos sus comprobantes electrónicos lo puede hacer en <a href='https://mavil.site/loginfacte'>mavil.site</a>
-			</p>
-			<br/>
-			<br/>
-			<p>
-			Atentamente,
-			El equipo de mavil
-			<a href='https://www.mavil.site'>www.mavil.site</a>
-			</p>
-		</div>
-	</body>
-</html>        
-            """.format(compro=datosnotif['trn_compro'],
+        .center {
+            margin: auto;
+            width: 75%;
+            border: 3px solid #88024b;
+            padding: 10px;
+            box-shadow: 10px -10px 5px #888787;
+            border-radius: 10px;
+        }
+                    """
+        html_email = """
+                        <!doctype html>
+                <html lang="es">
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>MAVIL-Notificación Comprobante Electrónico</title>
+                    <style>
+                        {style}
+                    </style>
+                </head>
+                <body>
+                <div class="center">
+    <h2>{comercio} le ha emitido una factura - {compro}</h2>
+    <img src="https://mavil.site/assets/imgs/Mavil.png" class="img">
+    <p>
+        Estimado/a {referente}, el comercio: {comercio} le ha emitido un comprobante electrónico, el mismo que se encuentra adjunto</p>
+    <p>
+    <table>
+        <tr>
+            <td>Número:</td><td>	{compro}</td></tr>
+        <tr>
+            <td>Fecha:</td><td>	{fecha}</td></tr>
+        <tr>
+            <td>Clave de acceso:</td><td>	{clave}</td></tr>
+        <tr>
+            <td>Autorización:</td><td>	{clave}</td></tr>
+        <tr>
+            <td>Fecha de autorización:</td><td>	{fechaaut}</td></tr>
+        <tr>
+            <td>Ambiente:</td><td>{ambiente}</td></tr>
+        <tr>
+            <td>Emisor:</td><td>{comercio}</td></tr>
+        <tr>
+            <td>RUC del emisor:</td><td>{ruc}</td></tr>
+        <tr>
+            <td>Dirección del emisor:</td><td>{direccion}</td></tr></table>
+    </p>
+    <p>
+        Si desea consultar todos sus comprobantes electrónicos lo puede hacer en <a href='https://mavil.site/loginfacte'>mavil.site</a>
+    </p>
+    <p>
+        Atentamente,
+        </p>
+    <p>
+        El equipo de mavil
+        <a href='https://www.mavil.site'>www.mavil.site</a>
+    </p>
+</div>
+                </body>
+                </html>
+        """.format(compro=datosnotif['trn_compro'],
                    referente=datosnotif['referente'],
                    comercio=datosnotif['alm_nomcomercial'],
                    ruc=datosnotif['alm_ruc'],
@@ -220,7 +231,8 @@ class NotifCompeUtil(BaseDao):
                    fecha=datosnotif['trn_fecreg'],
                    fechaaut=datosnotif['tfe_fecautoriza'],
                    clave=datosnotif['tfe_claveacceso'],
-                   ambiente=ambiente_text)
+                   ambiente=ambiente_text,
+                   style=style)
 
         alm_tipoamb = datosnotif['alm_tipoamb']
         per_email = datosnotif['per_email']

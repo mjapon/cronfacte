@@ -26,8 +26,8 @@ log = logging.getLogger(__name__)
 
 
 class NotifCompeUtil(BaseDao):
-    # APP_GMAIL_CODE_MANUEL = "jqzanuuvwnthhonx"
-    APP_GMAIL_CODE = "aavhytlcnuspkmti"
+
+    APP_GMAIL_CODE = ""
 
     def attach_file_to_email(self, email_message, filename, path):
         # Open the attachment file for reading in binary mode, and make it a MIMEApplication class
@@ -49,6 +49,15 @@ class NotifCompeUtil(BaseDao):
         )
         # Attach the file to the message
         email_message.attach(file_attachment)
+
+    def get_total_factura(self, trn_codigo):
+        try:
+            sql = ("select round(sum(dt_valor),2) as total from tasidetalle  where dt_tipoitem = 2 and trn_codigo = {0}"
+                   .format(trn_codigo))
+            return self.first_col(sql, 'total')
+        except Exception as ex:
+            log.error('Error al tratar de obtener el total de factura', ex)
+        return 0.0
 
     def get_datos_alm_matriz(self, sec_codigo):
         sqlbase = """
@@ -145,6 +154,9 @@ class NotifCompeUtil(BaseDao):
                 """.format(trn_codigo)
                 response = self.first(sql, tupla_desc)
 
+        total_factura = self.get_total_factura(trn_codigo)
+        response['monto'] = total_factura
+
         return response
 
     def enviar_email(self, trn_codigo, claveacceso):
@@ -172,57 +184,100 @@ class NotifCompeUtil(BaseDao):
             border-radius: 10px;
         }
                     """
-        html_email = """
-                        <!doctype html>
-                <html lang="es">
-                <html>
-                <head>
-                    <meta charset="utf-8">
-                    <title>MAVIL-Notificación Comprobante Electrónico</title>
-                    <style>
-                        {style}
-                    </style>
-                </head>
-                <body>
-                <div class="center">
-    <h2>{comercio} le ha emitido una factura - {compro}</h2>
-    <img src="https://mavil.site/assets/imgs/Mavil.png" class="img">
-    <p>
-        Estimado/a {referente}, el comercio: {comercio} le ha emitido un comprobante electrónico, el mismo que se encuentra adjunto</p>
-    <p>
-    <table>
-        <tr>
-            <td>Número:</td><td>	{compro}</td></tr>
-        <tr>
-            <td>Fecha:</td><td>	{fecha}</td></tr>
-        <tr>
-            <td>Clave de acceso:</td><td>	{clave}</td></tr>
-        <tr>
-            <td>Autorización:</td><td>	{clave}</td></tr>
-        <tr>
-            <td>Fecha de autorización:</td><td>	{fechaaut}</td></tr>
-        <tr>
-            <td>Ambiente:</td><td>{ambiente}</td></tr>
-        <tr>
-            <td>Emisor:</td><td>{comercio}</td></tr>
-        <tr>
-            <td>RUC del emisor:</td><td>{ruc}</td></tr>
-        <tr>
-            <td>Dirección del emisor:</td><td>{direccion}</td></tr></table>
-    </p>
-    <p>
-        Si desea consultar todos sus comprobantes electrónicos lo puede hacer en <a href='https://mavil.site/loginfacte'>mavil.site</a>
-    </p>
-    <p>
-        Atentamente,
-        </p>
-    <p>
-        El equipo de mavil
-        <a href='https://www.mavil.site'>www.mavil.site</a>
-    </p>
-</div>
-                </body>
-                </html>
+        html_email = """<html>
+<body>
+    <div style="margin:0;padding:0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:300;min-height:100%;height:100%;width:100%">
+        <table cellpadding="20" cellspacing="0" border="0"
+               style="width:100%;background-color:#eaeaea;background-image:url(https://mavil.site/assets/imgs/backgroundemailfacte.jpg);font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:300;border-collapse:collapse;margin:0;padding:0;line-height:100%;height:100%">
+            <tbody>
+            <tr>
+                <td style="border-collapse:collapse;vertical-align:top">
+                    <table cellpadding="0" cellspacing="0" border="0"
+                           style="background-color:#fff;margin:0 auto;width:680px;border:solid 1px #ddd;border-collapse:collapse">
+                        <tbody>
+                        <tr>
+                            <td style="border-collapse:collapse;vertical-align:top">
+                                <table cellpadding="20" cellspacing="0" border="0"
+                                       style="border-bottom:solid 1px #ddd;width:100%;border-collapse:collapse">
+                                    <tbody>
+                                    <tr>
+                                        <td style="color:#444;font-size:31px;font-weight:bold;border-collapse:collapse;vertical-align:top">
+                                            <img src="https://mavil.site/assets/imgs/Mavil.png"
+                                                 width="200" height="48" alt="twilio"
+                                                 style="outline:none;text-decoration:none" class="CToWUd"
+                                                 data-bit="iit">
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                                <table cellpadding="30" cellspacing="0" border="0"
+                                       style="width:100%;border-collapse:collapse">
+                                    <tbody>
+                                    <tr>
+                                        <td style="border-collapse:collapse;vertical-align:top">
+                                            <table cellpadding="10" cellspacing="0" border="0"
+                                                   style="width:100%;border-collapse:collapse">
+                                                <tbody>
+                                                <tr>
+                                                    <td style="border-collapse:collapse;vertical-align:top">
+                                                        <div style="font-size:16px;color:#555;line-height:26px;font-weight:300;margin:0px 0px">
+                                                            Estimado/a {referente} <br>
+                                                            Le emitieron la factura Nro {compro}
+                                                            por el monto de
+                                                            <h2 >{monto}</h2>
+                                                            La factura fue emitida el dia: {fecha} por:
+                                                            <p>
+                                                                <b>{comercio}</b>
+                                                                <br>
+                                                                RUC: {ruc}
+                                                                <br>
+                                                                {direccion}
+                                                            </p>
+                                                            <br/>
+                                                            Adjunto se encuentra el detalle de su factura.
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                </tbody>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <table cellpadding="0" cellspacing="0" border="0"
+                           style="margin:0 auto;width:680px;border-collapse:collapse">
+                        <tbody>
+                        <tr>
+                            <td style="border-collapse:collapse;vertical-align:top">
+                                <table cellpadding="10" cellspacing="0" border="0"
+                                       style="width:100%;text-align:center;border-collapse:collapse">
+                                    <tbody>
+                                    <tr>
+                                        <td style="border-collapse:collapse;vertical-align:top">
+                                            <p style="font-size:14px;color:#555;line-height:16px;font-weight:300;margin:20px 30px;text-align:center">
+                                                Powered by <a
+                                                    href="https://www.mavil.site"
+                                                    target="_blank">mavil.site</a>
+                                            </p>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
         """.format(compro=datosnotif['trn_compro'],
                    referente=datosnotif['referente'],
                    comercio=datosnotif['alm_nomcomercial'],
@@ -231,6 +286,7 @@ class NotifCompeUtil(BaseDao):
                    fecha=datosnotif['trn_fecreg'],
                    fechaaut=datosnotif['tfe_fecautoriza'],
                    clave=datosnotif['tfe_claveacceso'],
+                   monto=datosnotif['monto'],
                    ambiente=ambiente_text,
                    style=style)
 

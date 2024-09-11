@@ -56,7 +56,7 @@ class RedisSubscriber(BaseDao):
             compeleutil.test_envio_email(trn_codigo)
             log.info("Termina procesamiento de enviar correo mjmj: trn_codigo={0}".format(trn_codigo))
         except Exception as ex:
-            log.error("Error al tratar de realizar consulta de autorizacion", ex)
+            log.error("Error al tratar de realizar consulta de autorizacion 1", ex)
 
     def autorizar(self, trn_codigo, emp_esquema):
         log.info('Entra a autorizar esquema:{0}, codigo:{1}'.format(emp_esquema, trn_codigo))
@@ -66,7 +66,7 @@ class RedisSubscriber(BaseDao):
             compeleutil.autorizar(trn_codigo)
             log.info("Termina procesamiento de mensaje autorizar: trn_codigo={0}".format(trn_codigo))
         except Exception as ex:
-            log.info("Error al tratar de realizar consulta de autorizacion", ex)
+            log.info("Error al tratar de realizar consulta de autorizacion 2", ex)
 
     def enviar(self, trn_codigo, emp_esquema):
         try:
@@ -75,7 +75,7 @@ class RedisSubscriber(BaseDao):
             compeleutil.enviar(trn_codigo)
             log.info("Termina procesamiento de mensaje enviar: trn_codigo={0}".format(trn_codigo))
         except Exception as ex:
-            log.info("Error al tratar de realizar consulta de autorizacion" + str(ex))
+            log.info("Error al tratar de realizar consulta de autorizacion 3" + str(ex))
 
     def process_message(self, message_dict):
         log.info("Entra a procesar mensaje: trn_codigo={0}, emp_esquema:{1}, accion:{2}".format(

@@ -15,11 +15,10 @@ log = logging.getLogger(__name__)
 
 class GeneraFacturaCompEle(BaseDao):
 
-    def get_clave_acceso(self, datos_factura, tipo_ambiente):
+    def get_clave_acceso(self, datos_factura, tipo_ambiente, tipo_comprobante=ctes_facte.COD_DOC_FACTURA):
         trn_fecreg = datos_factura['trn_fecreg']
 
         fechafact = fechas.format_cadena(trn_fecreg, ctes.APP_FMT_FECHA, ctes_facte.APP_FMT_FECHA_SRI)
-        tipo_comprobante = '01'
         num_ruc = datos_factura['alm_ruc']
 
         trn_compro = datos_factura['trn_compro']

@@ -13,9 +13,10 @@ from logging.handlers import RotatingFileHandler
 import requests
 
 from setup.models.conf import BaseDao
-from setup.utils import ctes_facte
+from setup.utils import ctes_facte, ctes
 
 rutalogs = "/var/log/cronface.log"
+# rutalogs = "C:\\dev\\mavil\\repo\\cronfacte\\cronface.log"
 
 logging.basicConfig(handlers=[RotatingFileHandler(filename=rutalogs,
                                                   mode='w', maxBytes=512000, backupCount=4)], level=logging.INFO,
@@ -122,7 +123,7 @@ class NotifCompeUtil(BaseDao):
         select per.per_id, per.per_nombres||' '||coalesce(per.per_apellidos,'') as referente,
         per.per_ciruc, alm.alm_razsoc, alm.alm_nomcomercial, per.per_email, asi.trn_compro, alm.alm_tipoamb, 
         alm.alm_ruc, alm.alm_direcc, asi.trn_fecreg, asifacte.tfe_claveacceso, asifacte.tfe_numautoriza, 
-        asifacte.tfe_fecautoriza, asi.sec_codigo
+        asifacte.tfe_fecautoriza, asi.sec_codigo, asi.tra_codigo
         from
                 tasiento asi
                 join tasifacte asifacte on asi.trn_codigo = asifacte.trn_codigo
@@ -133,7 +134,7 @@ class NotifCompeUtil(BaseDao):
 
         tupla_desc = ('per_id', 'referente', 'per_ciruc', 'alm_razsoc', 'alm_nomcomercial', 'per_email', 'trn_compro',
                       'alm_tipoamb', 'alm_ruc', 'alm_direcc', 'trn_fecreg', 'tfe_claveacceso', 'tfe_numautoriza',
-                      'tfe_fecautoriza', 'sec_codigo')
+                      'tfe_fecautoriza', 'sec_codigo', 'tra_codigo')
 
         response = self.first(sql, tupla_desc)
         if response is not None:
@@ -143,7 +144,7 @@ class NotifCompeUtil(BaseDao):
                 select per.per_id, per.per_nombres||' '||coalesce(per.per_apellidos,'') as referente,
                 per.per_ciruc, alm.alm_razsoc, alm.alm_nomcomercial, per.per_email, asi.trn_compro, alm.alm_tipoamb, 
                 alm.alm_ruc, alm.alm_direcc, asi.trn_fecreg, asifacte.tfe_claveacceso, asifacte.tfe_numautoriza, 
-                asifacte.tfe_fecautoriza, asi.sec_codigo
+                asifacte.tfe_fecautoriza, asi.sec_codigo, asi.tra_codigo
                 from
                         tasiento asi
                         join tasifacte asifacte on asi.trn_codigo = asifacte.trn_codigo
@@ -159,7 +160,7 @@ class NotifCompeUtil(BaseDao):
 
         return response
 
-    def enviar_email(self, trn_codigo, claveacceso):
+    def enviar_email_documento(self, trn_codigo, claveacceso):
         # obrener el correo para envio
         datosnotif = self.get_datos_for_notif(trn_codigo=trn_codigo)
         per_id = datosnotif['per_id']
@@ -169,6 +170,11 @@ class NotifCompeUtil(BaseDao):
         enviar_email = per_id > 0
         if alm_tipoamb == 2:
             ambiente_text = "PRODUCCIÓN"
+
+        tra_codigo = datosnotif['tra_codigo']
+        tipodocumento = "factura"
+        if tra_codigo == ctes.TRA_COD_NOTA_CREDITO:
+            tipodocumento = "nota de crédito"
 
         style = """.img{
             width: 20%;
@@ -222,10 +228,10 @@ class NotifCompeUtil(BaseDao):
                                                     <td style="border-collapse:collapse;vertical-align:top">
                                                         <div style="font-size:16px;color:#555;line-height:26px;font-weight:300;margin:0px 0px">
                                                             Estimado/a {referente} <br>
-                                                            Le emitieron la factura Nro {compro}
+                                                            Le emitieron la {tipodocumento} Nro {compro}
                                                             por el monto de
                                                             <h2 >{monto}</h2>
-                                                            La factura fue emitida el dia: {fecha} por:
+                                                            La {tipodocumento} fue emitida el dia: {fecha} por:
                                                             <p>
                                                                 <b>{comercio}</b>
                                                                 <br>
@@ -234,7 +240,7 @@ class NotifCompeUtil(BaseDao):
                                                                 {direccion}
                                                             </p>
                                                             <br/>
-                                                            Adjunto se encuentra el detalle de su factura.
+                                                            Adjunto se encuentra el detalle de su documento.
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -288,6 +294,7 @@ class NotifCompeUtil(BaseDao):
                    clave=datosnotif['tfe_claveacceso'],
                    monto=datosnotif['monto'],
                    ambiente=ambiente_text,
+                   tipodocumento=tipodocumento,
                    style=style)
 
         alm_tipoamb = datosnotif['alm_tipoamb']

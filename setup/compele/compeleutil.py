@@ -169,74 +169,76 @@ class CompeleUtil(BaseDao):
 
         gen_data = GenDataForFacte(self.dbsession)
         datos_fact = gen_data.get_factura_data(trn_codigo=trn_codigo)
-        tra_codigo = datos_fact['tra_codigo']
+        if 'cabecera' not in datos_fact or datos_fact['cabecera'] is None:
+            log.info('No pude recuperar informacion de la trasaccion trn_codigo= {0}'.format(trn_codigo))
+            return
+        cabecera = datos_fact['cabecera']
+        tra_codigo = cabecera['tra_codigo']
         if tra_codigo == ctes.TRA_COD_NOTA_CREDITO:
-            self.enviar_nota_credito(trn_notacred=trn_codigo, sec_codigo=datos_fact['sec_codigo'])
+            return self.enviar_nota_credito(trn_notacred=trn_codigo, sec_codigo=cabecera['sec_codigo'])
 
+        sec_codigo = cabecera['sec_codigo']
+        datos_alm_matriz = gen_data.get_datos_alm_matriz(sec_codigo=sec_codigo)
+        ambiente_facte = datos_alm_matriz['alm_tipoamb']
+
+        tsecciondao = TSeccionDao(self.dbsession)
+
+        # Check multiple secciones
+        sec_id = sec_codigo
+        sec_tipoamb = 0
+        aplica_facte_por_seccion = False
+        if sec_id is not None and int(sec_id) > 1:
+            sec_tipoamb = tsecciondao.get_sec_tipoamb(sec_id=sec_codigo)
+            aplica_facte_por_seccion = sec_tipoamb > 0
+
+        if not aplica_facte_por_seccion:
+            alm_tipoamb = ambiente_facte
         else:
-            datos_factura = datos_fact['cabecera']
-            sec_codigo = datos_factura['sec_codigo']
-            datos_alm_matriz = gen_data.get_datos_alm_matriz(sec_codigo=sec_codigo)
-            ambiente_facte = datos_alm_matriz['alm_tipoamb']
+            alm_tipoamb = sec_tipoamb
 
-            tsecciondao = TSeccionDao(self.dbsession)
+        xml_facte = gen_fact.generar_factura(ambiente_value=alm_tipoamb,
+                                             datos_factura=cabecera,
+                                             datos_alm_matriz=datos_alm_matriz,
+                                             totales=datos_fact['totales'],
+                                             detalles_db=datos_fact['detalles']
+                                             )
 
-            # Check multiple secciones
-            sec_id = sec_codigo
-            sec_tipoamb = 0
-            aplica_facte_por_seccion = False
-            if sec_id is not None and int(sec_id) > 1:
-                sec_tipoamb = tsecciondao.get_sec_tipoamb(sec_id=sec_codigo)
-                aplica_facte_por_seccion = sec_tipoamb > 0
+        claveacceso = xml_facte['clave']
+        alm_ruc = datos_fact['cabecera']['alm_ruc']
 
-            if not aplica_facte_por_seccion:
-                alm_tipoamb = ambiente_facte
-            else:
-                alm_tipoamb = sec_tipoamb
+        client_proxy = ProxyClient(self.dbsession)
 
-            xml_facte = gen_fact.generar_factura(ambiente_value=alm_tipoamb,
-                                                 datos_factura=datos_factura,
-                                                 datos_alm_matriz=datos_alm_matriz,
-                                                 totales=datos_fact['totales'],
-                                                 detalles_db=datos_fact['detalles']
-                                                 )
+        proxy_response = None
+        try:
+            proxy_response = client_proxy.enviar_comprobante(claveacceso=claveacceso, comprobante=xml_facte['xml'],
+                                                             ambiente=ambiente_facte, ruc_empresa=alm_ruc)
+        except Exception as ex:
+            log.info("Error al tratar de enviar el comprobante al sri " + str(ex))
 
-            claveacceso = xml_facte['clave']
-            alm_ruc = datos_fact['cabecera']['alm_ruc']
+        enviado = False
+        estado_envio = 0  # No enviado
+        if proxy_response is not None:
+            proxy_response['numeroAutorizacion'] = claveacceso
+            if proxy_response['claveAcceso'] is None:
+                proxy_response['claveAcceso'] = claveacceso
 
-            client_proxy = ProxyClient(self.dbsession)
-
-            proxy_response = None
+            estado_envio = proxy_response['estado']
             try:
-                proxy_response = client_proxy.enviar_comprobante(claveacceso=claveacceso, comprobante=xml_facte['xml'],
-                                                                 ambiente=ambiente_facte, ruc_empresa=alm_ruc)
-            except Exception as ex:
-                log.info("Error al tratar de enviar el comprobante al sri " + str(ex))
-
-            enviado = False
-            estado_envio = 0  # No enviado
-            if proxy_response is not None:
-                proxy_response['numeroAutorizacion'] = claveacceso
-                if proxy_response['claveAcceso'] is None:
-                    proxy_response['claveAcceso'] = claveacceso
-
-                estado_envio = proxy_response['estado']
-                try:
-                    gen_data.save_proxy_send_response(trn_codigo=trn_codigo, ambiente=ambiente_facte,
-                                                      proxy_response=proxy_response)
-                    enviado = True
-                except Exception as ex:
-                    log.info("Error al tratar de guardar respuesta de envio", ex)
-            else:
                 gen_data.save_proxy_send_response(trn_codigo=trn_codigo, ambiente=ambiente_facte,
-                                                  proxy_response={
-                                                      'estado': 4,
-                                                      'estadoSRI': '',
-                                                      'fechaAutorizacion': '',
-                                                      'mensajes': '',
-                                                      'numeroAutorizacion': claveacceso,
-                                                      'claveAcceso': claveacceso
-                                                  })
+                                                  proxy_response=proxy_response)
+                enviado = True
+            except Exception as ex:
+                log.info("Error al tratar de guardar respuesta de envio", ex)
+        else:
+            gen_data.save_proxy_send_response(trn_codigo=trn_codigo, ambiente=ambiente_facte,
+                                              proxy_response={
+                                                  'estado': 4,
+                                                  'estadoSRI': '',
+                                                  'fechaAutorizacion': '',
+                                                  'mensajes': '',
+                                                  'numeroAutorizacion': claveacceso,
+                                                  'claveAcceso': claveacceso
+                                              })
 
         """
         try:

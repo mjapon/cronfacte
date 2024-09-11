@@ -4,6 +4,7 @@ Fecha de creacion 11/9/20
 @autor: Manuel Japon
 """
 import logging
+import traceback
 from logging.handlers import RotatingFileHandler
 
 import redis
@@ -76,6 +77,7 @@ class RedisSubscriber(BaseDao):
             log.info("Termina procesamiento de mensaje enviar: trn_codigo={0}".format(trn_codigo))
         except Exception as ex:
             log.info("Error al tratar de realizar consulta de autorizacion 3" + str(ex))
+            log.info("Ocurrió una excepción:\n%s", traceback.format_exc())
 
     def process_message(self, message_dict):
         log.info("Entra a procesar mensaje: trn_codigo={0}, emp_esquema:{1}, accion:{2}".format(

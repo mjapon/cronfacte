@@ -49,3 +49,5 @@ MONTO_MAXIMO_CONS_FINAL = 50.0
 
 URI_RIDE_PDF = "http://127.0.0.1:8080/reports/ride"
 URI_RIDE_XML = "http://127.0.0.1:8080/reports/ride"
+
+MOTIVO_DEVOLUCION = "DEVOLUCION"

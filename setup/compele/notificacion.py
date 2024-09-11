@@ -5,6 +5,7 @@ Fecha de creacion 11/9/20
 """
 import logging
 import smtplib
+import traceback
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -331,6 +332,7 @@ class NotifCompeUtil(BaseDao):
                     self.attach_bytes_to_email(email_message, '{0}.xml'.format(datosnotif['trn_compro']),
                                                response_xml.text)
 
+                    log.info("termina get adjuntos")
                     email_string = email_message.as_string()
                     smtp = smtplib.SMTP_SSL("smtp.gmail.com")
                     smtp.login(remitente, self.APP_GMAIL_CODE)
@@ -342,6 +344,8 @@ class NotifCompeUtil(BaseDao):
                                                                                                            destinatario))
                 except Exception as ex:
                     log.info("Error envio correo", ex)
-            else:
+                    log.info("Pila error envio correo:\n%s", traceback.format_exc())
+
+        else:
                 log.info(
                     "Destinatario es null o vacio, no se envia notificacion para trn_codigo:{0}".format(trn_codigo))

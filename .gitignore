@@ -1,2 +1,5 @@
 /.idea/inspectionProfiles/Project_Default.xml
 .idea/*
+cronfacte.egg-info
+cronfacte.egg-info/*
+cronface.log

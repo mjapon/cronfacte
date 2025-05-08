@@ -17,6 +17,7 @@ from setup.models.ttransaccrel.ttransaccrel_dao import TTransaccRelDao
 from setup.utils import ctes, ctes_facte
 
 rutalogs = "/var/log/cronface.log"
+# rutalogs = "C:\\dev\\mavil\\logs\\cronface.log"
 
 logging.basicConfig(handlers=[RotatingFileHandler(filename=rutalogs,
                                                   mode='w', maxBytes=512000, backupCount=4)], level=logging.INFO,

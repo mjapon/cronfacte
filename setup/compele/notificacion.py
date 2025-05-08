@@ -17,7 +17,7 @@ from setup.models.conf import BaseDao
 from setup.utils import ctes_facte, ctes
 
 rutalogs = "/var/log/cronface.log"
-# rutalogs = "C:\\dev\\mavil\\repo\\cronfacte\\cronface.log"
+# rutalogs = "C:\\dev\\mavil\\logs\\cronface.log"
 
 logging.basicConfig(handlers=[RotatingFileHandler(filename=rutalogs,
                                                   mode='w', maxBytes=512000, backupCount=4)], level=logging.INFO,
@@ -28,8 +28,7 @@ log = logging.getLogger(__name__)
 
 
 class NotifCompeUtil(BaseDao):
-
-    APP_GMAIL_CODE = ""
+    APP_GMAIL_CODE = "aavhytlcnuspkmti"
 
     def attach_file_to_email(self, email_message, filename, path):
         # Open the attachment file for reading in binary mode, and make it a MIMEApplication class
@@ -347,5 +346,5 @@ class NotifCompeUtil(BaseDao):
                     log.info("Pila error envio correo:\n%s", traceback.format_exc())
 
         else:
-                log.info(
-                    "Destinatario es null o vacio, no se envia notificacion para trn_codigo:{0}".format(trn_codigo))
+            log.info(
+                "Destinatario es null o vacio, no se envia notificacion para trn_codigo:{0}".format(trn_codigo))

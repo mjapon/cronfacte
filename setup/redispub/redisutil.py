@@ -18,8 +18,10 @@ simplejsonutil = SimpleJsonUtil()
 PASS_REDIS_PROD = "Hart$$471"
 myredis = redis.StrictRedis('localhost', 6379, charset="utf-8", decode_responses=True, password=PASS_REDIS_PROD)
 
+# Solo para probar en localhost
 # myredis = redis.StrictRedis('localhost', 6379, charset="utf-8", decode_responses=True)
 rutalogs = "/var/log/cronface.log"
+# rutalogs = "C:\\dev\\mavil\\logs\\cronface.log"
 
 logging.basicConfig(handlers=[RotatingFileHandler(filename=rutalogs,
                                                   mode='w', maxBytes=512000, backupCount=4)], level=logging.INFO,

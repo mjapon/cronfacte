@@ -4,7 +4,7 @@ from logging.handlers import RotatingFileHandler
 from setup.db import get_dbsession
 from setup.redispub.redisutil import RedisSubscriber
 
-#rutalogs = "/Users/manueljapon/Documents/dev/logs/cronface.log"
+# rutalogs = "C:\\dev\\mavil\\logs\\cronface.log"
 rutalogs = "/var/log/cronface.log"
 
 logging.basicConfig(handlers=[RotatingFileHandler(filename=rutalogs,

@@ -14,6 +14,7 @@ from setup.models.tcontribuyente.tcontribuyente_dao import TContribuyenteDao
 from setup.utils import ctes_facte
 
 rutalogs = "/var/log/cronface.log"
+# rutalogs = "C:\\dev\\mavil\\logs\\cronface.log"
 
 logging.basicConfig(handlers=[RotatingFileHandler(filename=rutalogs,
                                                   mode='w', maxBytes=512000, backupCount=4)], level=logging.INFO,
@@ -91,6 +92,10 @@ class GenDataForFacte(BaseDao):
             'total_descuentos': totales['descuentos'],
             'base_imp_iva_12': totales['subtotal12'],
             'impuesto_iva_12': totales['iva'],
+            'base_imp_iva_15': totales['subtotal15'],
+            'impuesto_iva_15': totales['iva15'],
+            'base_imp_iva_5': totales['subtotal5'],
+            'impuesto_iva_5': totales['iva5'],
             'total': totales['total'],
             'pago_efectivo': totales['total'],
             'pago_credito': 0,  # TODO:

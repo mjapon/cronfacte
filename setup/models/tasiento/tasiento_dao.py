@@ -100,6 +100,10 @@ class TAsientoDao(BaseDao):
         gdescuentos = 0.0
         gtotal = 0.0
         descglobal = 0.0
+        subtiva15 = 0.0
+        subtiva5 = 0.0
+        giva15 = 0.0
+        giva5 = 0.0
 
         for det in detalles:
             dt_cant = det['dt_cant']
@@ -114,15 +118,25 @@ class TAsientoDao(BaseDao):
             subtforiva = (dt_cant * dt_precio) - (dt_decto_cant + dt_dectogen)
             ivaval = 0.0
             dt_dectogeniva = dt_dectogen
+            iva15 = 0.0
+            iva5 = 0.0
             if dai_impg > 0:
                 ivaval = numeros.get_valor_iva(subtforiva, dai_impg)
                 gsubtotal12 += subtforiva
                 dt_dectogeniva = numeros.sumar_iva(dt_dectogen, dai_impg)
+                if dai_impg == 0.15:
+                    subtiva15 += subtforiva
+                    iva15 = ivaval
+                elif dai_impg == 0.05:
+                    subtiva5 += subtforiva
+                    iva5 = ivaval
             else:
                 gsubtotal0 += subtotal
 
             ftotal = subtotal - (dt_decto_cant + dt_dectogen) + ivaval
             giva += ivaval
+            giva15 += iva15
+            giva5 += iva5
             gdescuentos += (dt_decto_cant + dt_dectogen)
             gtotal += ftotal
             gsubtotal += subtotal
@@ -131,8 +145,12 @@ class TAsientoDao(BaseDao):
         return {
             'subtotal': numeros.roundm2(gsubtotal),
             'subtotal12': numeros.roundm2(gsubtotal12),
+            'subtotal15': numeros.roundm4(subtiva15),
+            'subtotal5': numeros.roundm4(subtiva5),
             'subtotal0': numeros.roundm2(gsubtotal0),
             'iva': numeros.roundm2(giva),
+            'iva15': numeros.roundm4(giva15),
+            'iva5': numeros.roundm4(giva5),
             'descuentos': numeros.roundm2(gdescuentos),
             'total': numeros.roundm2(gtotal),
             'descglobalin': numeros.roundm2(descglobal),

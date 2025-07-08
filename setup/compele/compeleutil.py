@@ -201,7 +201,8 @@ class CompeleUtil(BaseDao):
                                              datos_factura=cabecera,
                                              datos_alm_matriz=datos_alm_matriz,
                                              totales=datos_fact['totales'],
-                                             detalles_db=datos_fact['detalles']
+                                             detalles_db=datos_fact['detalles'],
+                                             pagos_db=datos_fact['pagos']
                                              )
 
         claveacceso = xml_facte['clave']
